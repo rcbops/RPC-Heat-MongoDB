@@ -82,6 +82,7 @@ salt -G 'roles:mongoconfigsrv' state.highstate
 salt -G 'roles:mongodb' state.highstate
 salt -G 'roles:mongos' state.highstate
 salt -G 'roles:mongodb' state.sls mongodb.replication
+salt -G 'roles:mongos' state.sls mongodb.mongos.cluster
 ```
 The roles work as follows: 
 "mongoconfigsrv" is a role for mongo configuration servers.
