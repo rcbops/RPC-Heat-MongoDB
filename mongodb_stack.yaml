@@ -1,0 +1,554 @@
+heat_template_version: 2013-05-23
+
+description: Deploys a salt master
+
+parameters:
+  keyname:
+    type: string
+    description: Key name for loggin in to instances
+  image:
+    type: string
+    description: Image name
+  floating-network-id:
+    type: string
+    description: UUID of the external network. The private network created by this stack will route to this network. Also, any floating ip's needed by this stack will come this network. 
+  minion-count-mongos:
+    type: number
+    default: 1
+    label: Number of mongos
+    description: How many mongos will be required.
+  minion-count-mongodb:
+    type: number
+    default: 3
+    label: Number of mongod servers
+    description: How many mongod servers will be in a cluster.
+  minion-size-mongodb:
+    type: string
+    default: m1.small
+    label: Flavor of mongod servers
+    description: Flavor (image size) of mongod servers to be created.
+  apps-network:
+    type: string
+    label: Network UUID of apps network
+    description: The network UUID of the network your app (Magento, Drupal, etc.) is on.
+
+
+resources:
+    
+  # Random string to aid in naming things.
+  stack-string:
+    type: OS::Heat::RandomString
+    properties:
+      length: 6
+      sequence: lettersdigits
+      
+  secret:
+    type: OS::Heat::RandomString
+    properties:
+      length: 32
+      sequence: lettersdigits
+
+  # Keypair for communicating between nodes within the stack.
+  # Will allow minions to ssh into the master and vice versa.
+  coms:
+    type: OS::Nova::KeyPair
+    properties:
+     save_private_key: true
+     name:
+       str_replace:
+         template: mongo-$stackstr-coms
+         params:
+           $stackstr:
+             get_attr:
+               - stack-string
+               - value      
+      
+  net:
+    type: OS::Neutron::Net
+
+  subnet:
+    type: OS::Neutron::Subnet
+    properties:
+      network_id:
+        get_resource: net
+      cidr: 10.10.10.0/24
+      dns_nameservers:
+        - 8.8.8.8
+        - 4.2.2.2
+
+  router:
+    type: OS::Neutron::Router
+    properties:
+      external_gateway_info:
+        network: 
+          get_param: floating-network-id
+
+  interface:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router_id:
+        get_resource: router
+      subnet_id: 
+        get_resource: subnet
+
+  master-ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: 
+        get_param: floating-network-id
+
+  master-port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: 
+        get_resource: net
+
+  config-salt-master:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      inputs:
+        - name: public_key
+        - name: state_repos
+      config: |
+        #!/bin/bash
+        chmod 0700 /root/.ssh/coms_rsa
+        chmod 0600 /srv/pillar/mongodb.sls
+        chmod 0600 /srv/pillar/mongos.sls
+        chmod 0600 /srv/pillar/mongoconfigsrv.sls
+
+        # Add coms from minions to master
+        echo "$public_key" >> /root/.ssh/authorized_keys
+
+        # Install git
+        apt-get install -y git
+            
+        # Install salt master
+        echo "Install Salt Master"
+        curl -L http://bootstrap.saltstack.org | sh -s -- -M -N
+        mkdir /srv/salt
+        echo -e 'file_roots:\n  base:\n    - /srv/salt' >> /etc/salt/master
+
+        # Clone state/formula repos in state root directory
+        cd /srv/salt
+        while read -r line
+        do
+            if [ -n "$line" ]; then
+                git clone $line
+            fi
+        done <<< "$state_repos"
+        # workaround for nested mongodb repo
+        mv mongodb-formula/mongodb/ mongodb
+        # Finally - Restart salt service
+        service salt-master restart
+
+  config-salt-minion:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      inputs:
+        - name: public_key
+        - name: master
+      config: |
+        #!/bin/bash
+        chmod 0700 /root/.ssh/coms_rsa
+            
+        # Add coms from minions to master
+        echo "$public_key" >> /root/.ssh/authorized_keys
+
+        # Install salt minion
+        curl -L http://bootstrap.saltstack.org | sh -s
+        echo master: $master >> /etc/salt/minion
+
+        service salt-minion restart
+
+        ssh-keyscan -H $master >> /root/.ssh/known_hosts
+
+        echo "Sleeping for 20s"
+        sleep 20
+
+        MASTER_PKI_PATH="/etc/salt/pki/master/minions/"
+        MASTER_PKI_PATH_PRE="/etc/salt/pki/master/minions_pre/"
+        MINION_PKI_PATH="/etc/salt/pki/minion/minion.pub"
+        HOSTNAME=`hostname --fqdn`
+
+        cp $MINION_PKI_PATH /root/minion_key
+
+        scp -i /root/.ssh/coms_rsa /root/minion_key root@$master:/tmp/$HOSTNAME
+
+        ssh -i /root/.ssh/coms_rsa root@$master "mv /tmp/$HOSTNAME $MASTER_PKI_PATH$HOSTNAME; chmod 700 $MASTER_PKI_PATH$HOSTNAME; rm $MASTER_PKI_PATH_PRE$HOSTNAME"
+
+        service salt-minion restart
+        rm /root/minion_key
+        rm /root/.ssh/coms_rsa
+        /sbin/ifconfig -a | grep -v eth0 | /usr/bin/awk '/eth.*Ethernet/ {print $1}' | while read E; do /usr/bin/sudo /sbin/dhclient $E; done
+
+  deploy-salt-master:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      input_values:
+        public_key:
+          get_attr:
+            - coms
+            - public_key
+        state_repos: |
+          https://github.com/eglute/mongodb-formula.git
+      config:
+        get_resource: config-salt-master
+      server:
+        get_resource: master
+
+  master:
+    type: OS::Nova::Server
+    depends_on: interface
+    properties:
+      key_name:
+        get_param: keyname
+      image: 
+        get_param: image
+      flavor: m1.small
+      name:
+        str_replace:
+          template: mongodb-$stackstr-master
+          params:
+            $stackstr:
+              get_attr:
+                - stack-string
+                - value
+      personality:
+        /root/.ssh/coms_rsa:
+          get_attr:
+            - coms
+            - private_key
+
+        /srv/salt/top.sls: |
+          base:
+            'roles:mongodb':
+              - match: grain
+              - mongodb
+            'roles:mongos':
+              - match: grain
+              - mongodb
+              - mongodb.mongos
+            'roles:mongoconfigsrv':
+              - match: grain
+              - mongodb
+
+        /srv/pillar/top.sls: |
+          base:
+            '*':
+              - app
+            'roles:mongos':
+              - match: grain
+              - mongodb
+            'roles:mongodb':
+              - match: grain
+              - mongodb
+            'roles:mongoconfigsrv':
+              - match: grain
+              - mongoconfigsrv
+              
+        /srv/pillar/app.sls: |
+          interfaces:
+            private: eth0
+            public: eth0
+          mine_functions:
+            network.ip_addrs: [eth0]
+            network.interfaces: []
+          mine_interval: 1
+
+        /srv/pillar/mongodb.sls: |
+          mongodb:
+            use_ppa: False
+            version: 2.6.4
+            package_name: mongodb-org
+            mongo_directory: /mongodb
+            inclue_tools: True
+            manage_replica_set: True
+            reconfigure_replica_set: False
+            replica_set: rs0
+            config_svr: False
+            shard_svr: True
+            settings:
+              db_path: /mongodb/data
+              bind_ip: {{ salt['grains.get']('ip_interfaces:eth0')[0] }}
+              log_path: /mongodb/log
+              log_append: True
+              rest: True
+          mongos:
+            use_ppa: False
+            version: 2.6.4
+            package_name: mongodb-org-mongos
+            settings:
+              log_file: /mongodb/log/mongos.log
+
+        /srv/pillar/mongos.sls: |
+          mongodb:
+            use_ppa: False
+            version: 2.6.4
+            package_name: mongodb-org
+            mongo_directory: /mongodb
+            inclue_tools: True
+            manage_replica_set: False
+            reconfigure_replica_set: False
+            config_svr: False
+            shard_svr: False
+            replica_set: rs0
+            settings:
+              db_path: /mongodb/data
+              bind_ip: {{ salt['grains.get']('ip_interfaces:eth0')[0] }}
+              log_path: /mongodb/log
+              log_append: True
+              rest: True
+          mongos:
+            version: 2.6.4
+            package_name: mongodb-org-mongos
+            settings:
+              log_file: /mongodb/log/mongos.log
+
+        /srv/pillar/mongoconfigsrv.sls: |
+          mongodb:
+            use_ppa: False
+            version: 2.6.4
+            package_name: mongodb-org
+            mongo_directory: /mongodb
+            inclue_tools: True
+            manage_replica_set: False
+            reconfigure_replica_set: False
+            config_svr: True
+            settings:
+              bind_ip: {{ salt['grains.get']('ip_interfaces:eth0')[0] }}
+              db_path: /mongodb/data
+              log_path: /mongodb/log
+              log_append: True
+              rest: True
+
+          mongos:
+            use_ppa: False
+            version: 2.6.4
+            package_name: mongodb-org-mongos
+            settings:
+              log_file: /mongodb/log/mongos.log
+
+      networks:
+        - port:
+            get_resource: master-port
+      user_data_format: SOFTWARE_CONFIG
+
+  master-floating-ip-ass: 
+    type: OS::Neutron::FloatingIPAssociation
+    properties: 
+      floatingip_id:
+        get_resource: master-ip
+      port_id:
+        get_resource: master-port
+  
+  minion-group-mongoconfigsrv:
+    type: OS::Heat::ResourceGroup
+    depends_on: deploy-salt-master
+    properties:
+      count: 3
+      resource_def:
+        type: Salt::Minion
+        properties:
+          flavor: m1.small
+          stack-prefix:
+            str_replace:
+              template: mongo-$stackstr-configsrv
+              params:
+                $stackstr:
+                  get_attr:
+                    - stack-string
+                    - value
+          private_key:
+            get_attr:
+              - coms
+              - private_key
+          public_key:
+            get_attr:
+              - coms
+              - public_key
+          image:
+            get_param: image
+          network:
+            get_resource: net
+          master:
+            get_attr:
+              - master
+              - first_address
+          minion-config:
+            get_resource: config-salt-minion
+          minion-roles: "mongoconfigsrv"
+
+  minion-group-mongodb:
+    type: OS::Heat::ResourceGroup
+    depends_on: deploy-salt-master
+    properties:
+      count:
+        get_param: minion-count-mongodb
+      resource_def:
+        type: Salt::Minion
+        properties:
+          flavor: 
+            get_param: minion-size-mongodb
+          stack-prefix:
+            str_replace:
+              template: mongo-$stackstr-mongodb
+              params:
+                $stackstr:
+                  get_attr:
+                    - stack-string
+                    - value
+          private_key:
+            get_attr:
+              - coms
+              - private_key
+          public_key:
+            get_attr:
+              - coms
+              - public_key
+          image:
+            get_param: image
+          network:
+            get_resource: net
+          master:
+            get_attr:
+              - master
+              - first_address
+          minion-config:
+            get_resource: config-salt-minion
+          minion-roles: "mongodb"
+
+  minion-group-mongos:
+    type: OS::Heat::ResourceGroup
+    depends_on: 
+      - deploy-salt-master
+      - minion-group-mongodb
+      - minion-group-mongoconfigsrv
+    properties:
+      count:
+        get_param: minion-count-mongos
+      resource_def:
+        type: Salt::MinionMongos
+        properties:
+          flavor: m1.small
+          stack-prefix:
+            str_replace:
+              template: mongo-$stackstr-mongos
+              params:
+                $stackstr:
+                  get_attr:
+                    - stack-string
+                    - value
+          private_key:
+            get_attr:
+              - coms
+              - private_key
+          public_key:
+            get_attr:
+              - coms
+              - public_key
+          image:
+            get_param: image
+          network:
+            get_resource: net
+          master:
+            get_attr:
+              - master
+              - first_address
+          minion-config:
+            get_resource: config-salt-minion
+          minion-roles: "mongos"
+          apps-net: 
+            get_param: apps-network
+
+          
+  minion-mongoconfigsrv-ip:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network_id: 
+        get_param: floating-network-id
+
+  minion-mongoconfigsrv-port:
+    type: OS::Neutron::Port
+    properties:
+      network_id: 
+        get_resource: net
+
+  
+  minion-mongoconfigsrv-floating-ip-ass: 
+    type: OS::Neutron::FloatingIPAssociation
+    properties: 
+      floatingip_id:
+        get_resource: minion-mongoconfigsrv-ip
+      port_id:
+        get_resource: minion-mongoconfigsrv-port
+
+  config-deploy:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      config: |
+        #!/bin/bash
+        salt '*' saltutil.refresh_pillar
+        salt '*' mine.update
+        salt '*' state.highstate
+
+  deploy:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      config:
+        get_resource: config-deploy
+      server:
+        get_resource: master
+    depends_on:
+      - deploy-salt-master
+      - minion-group-mongoconfigsrv
+      - minion-group-mongodb
+      - minion-group-mongos
+
+  config-replication:
+     type: OS::Heat::SoftwareConfig
+     properties:
+       group: script
+       config: |
+         #!/bin/bash
+         salt -G 'roles:mongoconfigsrv' state.highstate
+         salt -G 'roles:mongodb' state.highstate
+         salt -G 'roles:mongos' state.highstate
+         salt -G 'roles:mongodb' state.sls mongodb.replication
+  
+  deploy-replication:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      config:
+        get_resource: config-replication
+      server:
+        get_resource: master
+    depends_on:
+      - deploy-salt-master
+      - minion-group-mongoconfigsrv
+      - minion-group-mongodb
+      - minion-group-mongos
+
+outputs:
+  master-ip:
+    value: 
+      get_attr:
+        - master-ip
+        - floating_ip_address
+  minion-web-ips:
+    value:
+      get_attr:
+        - minion-group-mongoconfigsrv
+        - minion-ip
+  minion-stdout:
+    value:
+      get_attr:
+        - minion-group-mongoconfigsrv
+        - minion-stdout
+  minion-stderr:
+    value:
+      get_attr:
+        - minion-group-mongoconfigsrv
+        - minion-stderr
