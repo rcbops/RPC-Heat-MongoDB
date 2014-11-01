@@ -192,7 +192,7 @@ resources:
             - coms
             - public_key
         state_repos: |
-          https://github.com/eglute/mongodb-formula.git
+          https://github.com/rcbops/mongodb-formula
       config:
         get_resource: config-salt-master
       server:
