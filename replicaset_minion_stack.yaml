@@ -87,7 +87,7 @@ resources:
           str_replace:
             template: |
               roles: [$roles]
-              replica_set: [$rsname]
+              replica_set: $rsname
             params:
               $roles:
                 get_param: minion-roles

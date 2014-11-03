@@ -103,6 +103,8 @@ resources:
             get_param: network
         - port: 
             get_resource: apps-net-port
+      security_groups:
+        - get_param: security_group
 
 
       user_data_format: SOFTWARE_CONFIG
