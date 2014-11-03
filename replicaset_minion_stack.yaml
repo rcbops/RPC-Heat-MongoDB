@@ -143,7 +143,9 @@ resources:
           get_param: private_key
         /etc/salt/grains:
           str_replace:
-            template: "roles: [$roles]"
+            template: |
+              roles: [$roles]
+              replica_set: $rsname
             params:
               $roles:
                 get_param: minion-roles
@@ -195,7 +197,9 @@ resources:
           get_param: private_key
         /etc/salt/grains:
           str_replace:
-            template: "roles: [$roles]"
+            template: |
+              roles: [$roles]
+              replica_set: $rsname
             params:
               $roles:
                 get_param: minion-roles
