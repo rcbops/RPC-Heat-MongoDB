@@ -264,12 +264,12 @@ resources:
           mongodb:
             public_interface: eth0
             port: 27017
-         mongos:
+          mongos:
             public_interface: eth0
             port: 27017
-         mine_functions:
-           network.interfaces: []
-         mine_interval: 1
+          mine_functions:
+            network.interfaces: []
+          mine_interval: 1
 
       networks:
         - port:
