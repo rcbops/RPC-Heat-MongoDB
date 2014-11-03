@@ -257,7 +257,7 @@ resources:
             roles:mongodb.configserver:
               - match: grain
               
-        /srv/pillar/global/init.sls: |
+        /srv/pillar/mongodb/global/init.sls: |
           configserver:
             public_interface: eth0
             port: 27019
