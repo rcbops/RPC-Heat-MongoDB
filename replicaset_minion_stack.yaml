@@ -149,6 +149,10 @@ resources:
             params:
               $roles:
                 get_param: minion-roles
+              $rsname:
+                get_attr:
+                  - stack-string
+                  - value
            
       networks:
         - network: 
@@ -203,6 +207,10 @@ resources:
             params:
               $roles:
                 get_param: minion-roles
+              $rsname:
+                get_attr:
+                  - stack-string
+                  - value
            
       networks:
         - network: 
