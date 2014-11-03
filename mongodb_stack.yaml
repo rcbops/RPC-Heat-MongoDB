@@ -211,7 +211,7 @@ resources:
             - coms
             - public_key
         state_repos: |
-          https://github.com/chalupaul/mongodb-formula
+          https://github.com/rcbops/mongodb-formula
       config:
         get_resource: config-salt-master
       server:
