@@ -34,6 +34,9 @@ parameters:
   apps-net:
     type: string
     description: The UUID of the apps network
+  security_group:
+    type: string
+    description: the UUID of a security group
 
 resources:
 
@@ -48,6 +51,8 @@ resources:
     properties:
       network_id: 
         get_param: apps-net
+      security_group:
+        get_param: security_group
 
   deploy-salt-minion:
     type: OS::Heat::SoftwareDeployment

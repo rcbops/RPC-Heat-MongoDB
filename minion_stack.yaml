@@ -31,6 +31,9 @@ parameters:
   minion-roles:
     type: string
     description: List of roles for the minion
+  security_group:
+    type: string
+    description: Security group
 
 resources:
 
@@ -73,6 +76,9 @@ resources:
 
       flavor:
         get_param: flavor
+
+      security_groups:
+        - get_param: security_group
 
       personality:
         /root/.ssh/coms_rsa:
