@@ -325,7 +325,8 @@ resources:
 
   minion-group-replicaset:
     type: OS::Heat::ResourceGroup
-    depends_on: deploy-salt-master
+    depends_on: 
+      - deploy-salt-master
     properties:
       count:
         get_param: minion-count-replicaset
@@ -368,8 +369,6 @@ resources:
     type: OS::Heat::ResourceGroup
     depends_on: 
       - deploy-salt-master
-      - minion-group-mongodb
-      - minion-group-mongoconfigsrv
     properties:
       count:
         get_param: minion-count-mongos
@@ -434,7 +433,6 @@ resources:
     depends_on:
       - deploy-salt-master
       - minion-group-mongoconfigsrv
-      - minion-group-mongodb
       - minion-group-mongos
       - minion-group-replicaset
 
