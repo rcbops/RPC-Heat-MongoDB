@@ -436,6 +436,7 @@ resources:
       - minion-group-mongoconfigsrv
       - minion-group-mongodb
       - minion-group-mongos
+      - minion-group-replicaset
 
 outputs:
   master-ip:
