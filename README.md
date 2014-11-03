@@ -4,10 +4,10 @@ Description
 This is an OpenStack HEAT template to deploy [MongoDB](http://www.mongodb.org/) 
 to multiple servers in an OpenStack cloud. 
 
-This template uses [MongoDB salt-formulas](https://github.com/eglute/mongodb-formula) 
-to configure the servers. It deploys a salt-master, and a number of salt-minions. 
-Three minions will be Mongo configuration servers, at least one mongo routing (mongos) 
-server, and we recommend at least 3 mongodb shards.
+This template uses [MongoDB salt-formulas](https://github.com/rcbops/mongodb-formula) 
+to configure the servers. Three instances will be Mongo configuration servers, 
+at least two mongo routing (mongos) servers, and we at least 3 mongodb shards in a replica set.
+Each replica set created becomes a shard for databases to spread across.
 
 For access to nodes in the MongoDB cluster, a floating ip will be assigned to the 
 salt-master. Or a new server can be created in the same network as the MongoDB network.
@@ -35,8 +35,7 @@ Requirements
   * OS::Nova::KeyPair
 
 * A separete application network where mongos node will be connected.
-* Injected files limit in nova should be set to 10 or more:
-  nova quota-class-update --injected_files 10 default
+* The flavor should have at least 10GB of disk space.
 * Port 27017 should be accesible 
 * An Ubuntu image (12.04 or newer) preconfigured with heat-cfntools and heat confog-script. 
 Instructions for creating a heat-cfntools enabled image for use with Heat can be 
