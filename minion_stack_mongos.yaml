@@ -46,6 +46,14 @@ resources:
       length: 6
       sequence: lettersdigits
 
+  network-port:
+    type: OS::Neutron::Port 
+    properties:
+      network_id: 
+        get_param: network
+      security_groups:
+        - get_param: security_group
+
   apps-net-port:
     type: OS::Neutron::Port 
     properties:
@@ -99,12 +107,10 @@ resources:
                 get_param: minion-roles
            
       networks:
-        - network: 
-            get_param: network
+        - port: 
+            get_resource: network-port
         - port: 
             get_resource: apps-net-port
-      security_groups:
-        - get_param: security_group
 
 
       user_data_format: SOFTWARE_CONFIG
