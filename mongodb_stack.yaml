@@ -163,7 +163,7 @@ resources:
             fi
         done <<< "$state_repos"
         # workaround for nested mongodb repo
-        mv mongodb-formula/salt/ mongodb-formula/top.sls mongodb
+        mv mongodb-formula/salt/top.sls mongodb-formula/salt/mongodb/ /srv/salt
         # Finally - Restart salt service
         service salt-master restart
 
