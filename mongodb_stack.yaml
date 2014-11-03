@@ -394,7 +394,7 @@ resources:
               - coms
               - public_key
           security_group:
-            get_attr: secgroup
+            get_resource: secgroup
           image:
             get_param: image
           network:
