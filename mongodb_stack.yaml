@@ -253,23 +253,6 @@ resources:
               - match: grain
 
         /srv/pillar/mongodb/global/init.sls: |
-          user-ports:
-            ssh:
-              chain: INPUT
-              proto: tcp
-              dport: 22
-            salt-master:
-              chain: INPUT
-              proto: tcp
-              dport: 4505
-            salt-minion:
-              chain: INPUT
-              proto: tcp
-              dport: 4506
-            mongo-port:
-              chain: INPUT
-              proto: tcp
-              dport: 27017:27019
           configserver:
             public_interface: eth0
             port: 27019
