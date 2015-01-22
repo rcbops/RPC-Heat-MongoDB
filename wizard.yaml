@@ -1,5 +1,6 @@
 name: MongoDB
 release: 1.0
+logo: assets/logo.png
 
 short_desc: |
   RPC-Heat-MongoDB delivers a deployable configuration of MongoDB cluster using the Heat orchestration engine available in any Rackspace OpenStack Private Cloud.
@@ -11,16 +12,10 @@ architecture: |
   The RPC MongoDB solution provides a best practice architecture and solution for running mid-size to large MongoDB clusters configured to run on a typical Private Cloud Configuration.
   Our MongoDB architecture is designed to provide a resilient database to store your content in a Private Cloud. We have optimized every component of the stack for Cloud Infrastructure. With a deployment driven by the OpenStack Heat orchestration engine and Salt configuration management, we are able to deliver MongoDB cluster as a repeatable, scalable, production-ready deployment.
 
-design_specs: |
+design_specs:
   - This template uses MongoDB salt-formulas to configure the servers. Three instances will be Mongo configuration servers, at least two mongo routing (mongos) servers, and at least 3 mongodb shards in a replica set. Each replica set created becomes a shard for databases to spread across.
   - For access to nodes in the MongoDB cluster, a floating ip will be assigned to the salt-master. Or a new server can be created in the same network as the MongoDB network. Additionally, mongos server will also be on a separete network so that applications could access your database cluster without being on the same network.
   - Any changes to the MongoDB configuration can be done using Salt pillars on the Salt master. Adding additional mongos nodes can be done via Salt as well.
 
-questions:
-  - keyname: Please select SSH key to be used with the Salt master
-  - image: Please select image to be used for spinning up every VM in the stack
-  - floating-network-id: Please select external network
-  - apps-network: Please select application network
-  - minion-count-mongos: How many mongos instances to create
-  - minion-count-replicaset: How many replica sets to create
-  - minion-size-mongodb: VM Flavor (size) for every VM created
+heat_template: mongodb_stack.yaml
+env_file: env.yaml
