@@ -421,11 +421,19 @@ resources:
       group: script
       config: |
         #!/bin/bash
+        set -ex
+        logdir=/var/log/heat-deployments
+        prefix=${logdir}/config-deploy
+        mkdir -p $logdir
+        exec &> >(tee -a ${prefix}.log)
+        [ -e ${prefix}.ran ] && exit 0
         salt '*' saltutil.refresh_pillar
         salt '*' mine.update
         salt -G roles:mongodb.configserver state.highstate
         salt -G roles:mongodb.mongos state.highstate
         salt -G roles:mongodb.mongodb state.highstate
+        touch ${prefix}.ran
+        
 
   deploy:
     type: OS::Heat::SoftwareDeployment
