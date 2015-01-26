@@ -253,6 +253,23 @@ resources:
               - match: grain
 
         /srv/pillar/mongodb/global/init.sls: |
+          user-ports:
+            ssh:
+              chain: INPUT
+              proto: tcp
+              dport: 22
+            salt-master:
+              chain: INPUT
+              proto: tcp
+              dport: 4505
+            salt-minion:
+              chain: INPUT
+              proto: tcp
+              dport: 4506
+            mongo-port:
+              chain: INPUT
+              proto: tcp
+              dport: 27017:27019
           configserver:
             public_interface: eth0
             port: 27019
@@ -420,9 +437,11 @@ resources:
         [ -e ${prefix}.ran ] && exit 0
         salt '*' saltutil.refresh_pillar
         salt '*' mine.update
-        salt -G roles:mongodb.configserver state.highstate
-        salt -G roles:mongodb.mongos state.highstate
-        salt -G roles:mongodb.mongodb state.highstate
+        salt '*' saltutil.sync_all
+        salt -t 90 '*' state.sls secureserver.secureserver
+        salt -G -t 90 roles:mongodb.configserver state.highstate
+        salt -G -t 90 roles:mongodb.mongos state.highstate
+        salt -G -t 90 roles:mongodb.mongodb state.highstate
         touch ${prefix}.ran
 
   deploy:
