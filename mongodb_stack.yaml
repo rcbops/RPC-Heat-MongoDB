@@ -211,8 +211,8 @@ resources:
             - coms
             - public_key
         state_repos: |
-          https://github.com/bunchc/mongodb-formula
-          https://github.com/bunchc/secureserver
+          https://github.com/rcbops/mongodb-formula
+          https://github.com/rcbops/base-hardening-formula
       config:
         get_resource: config-salt-master
       server:
@@ -441,7 +441,7 @@ resources:
         salt -G -t 90 roles:mongodb.configserver state.highstate
         salt -G -t 90 roles:mongodb.mongos state.highstate
         salt -G -t 90 roles:mongodb.mongodb state.highstate
-        salt -t 90 '*' state.sls secureserver.secureserver
+        salt -t 90 '*' state.sls base-hardening-formula.base-hardening-formula
         touch ${prefix}.ran
 
   deploy:
