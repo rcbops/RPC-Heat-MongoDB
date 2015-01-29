@@ -2,6 +2,16 @@ heat_template_version: 2013-05-23
 
 description: Deploys a salt master
 
+parameter_groups:
+  - parameters:
+    - keyname
+    - image
+    - floating-network-id
+    - apps-network
+    - minion-count-mongos
+    - minion-count-replicaset
+    - minion-size-mongodb
+
 parameters:
   keyname:
     type: string
