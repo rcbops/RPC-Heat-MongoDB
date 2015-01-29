@@ -222,6 +222,7 @@ resources:
             - public_key
         state_repos: |
           https://github.com/rcbops/mongodb-formula
+          https://github.com/rcbops/base-hardening-formula
       config:
         get_resource: config-salt-master
       server:
@@ -260,8 +261,25 @@ resources:
               - match: grain
             roles:mongodb.configserver:
               - match: grain
-              
+
         /srv/pillar/mongodb/global/init.sls: |
+          user-ports:
+            ssh:
+              chain: INPUT
+              proto: tcp
+              dport: 22
+            salt-master:
+              chain: INPUT
+              proto: tcp
+              dport: 4505
+            salt-minion:
+              chain: INPUT
+              proto: tcp
+              dport: 4506
+            mongo-port:
+              chain: INPUT
+              proto: tcp
+              dport: 27017:27019
           configserver:
             public_interface: eth0
             port: 27019
@@ -429,11 +447,12 @@ resources:
         [ -e ${prefix}.ran ] && exit 0
         salt '*' saltutil.refresh_pillar
         salt '*' mine.update
-        salt -G roles:mongodb.configserver state.highstate
-        salt -G roles:mongodb.mongos state.highstate
-        salt -G roles:mongodb.mongodb state.highstate
+        salt '*' saltutil.sync_all
+        salt -G -t 90 roles:mongodb.configserver state.highstate
+        salt -G -t 90 roles:mongodb.mongos state.highstate
+        salt -G -t 90 roles:mongodb.mongodb state.highstate
+        salt -t 90 '*' state.sls base-hardening-formula.base-hardening-formula
         touch ${prefix}.ran
-        
 
   deploy:
     type: OS::Heat::SoftwareDeployment

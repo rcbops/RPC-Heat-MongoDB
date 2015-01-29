@@ -54,9 +54,10 @@ Here is an example of how to deploy this template using the
 [python-heatclient](https://github.com/openstack/python-heatclient):
 
 ```
-heat stack-create hadoop-stack -f mongodb_stack.yaml \
-  -e env.yaml -P flavor=m1.large;floating-network-id=<NET_ID>; \
-   < ... > ;image=<IMAGE_ID>
+heat stack-create mongo-iptables-test -f mongodb_stack.yaml -e env.yaml \
+  -P minion-size-mongodb=m1.small -P floating-network-id=<...> \
+  -P image=[image_name] -P keyname=[ssh_key] \
+  -P apps-network=<...>
 ```
 All the required parameters are as follows:
 ```
