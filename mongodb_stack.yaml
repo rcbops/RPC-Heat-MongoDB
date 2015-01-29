@@ -10,7 +10,7 @@ parameter_groups:
     - apps-network
     - minion-count-mongos
     - minion-count-replicaset
-    - minion-size-mongodb
+    - minion-flavor-mongodb
 
 parameters:
   keyname:
@@ -32,7 +32,7 @@ parameters:
     default: 3
     label: Number of replica sets to create
     description: How many mongod servers will be in a cluster.
-  minion-size-mongodb:
+  minion-flavor-mongodb:
     type: string
     default: m1.small
     label: Flavor of mongod servers
@@ -338,7 +338,7 @@ resources:
         type: MongoDB::ReplicaSet
         properties:
           flavor: 
-            get_param: minion-size-mongodb
+            get_param: minion-flavor-mongodb
           stack-prefix:
             str_replace:
               template: mongo-$stackstr
