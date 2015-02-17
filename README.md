@@ -37,7 +37,7 @@ Requirements
 * A separete application network where mongos node will be connected.
 * The flavor should have at least 10GB of disk space.
 * Port 27017 should be accesible 
-* An Ubuntu image (12.04 or newer) preconfigured with heat-cfntools and heat confog-script. 
+* An Ubuntu image (12.04 or newer) preconfigured with heat-cfntools and heat config-script. 
 Instructions for creating a heat-cfntools enabled image for use with Heat can be 
 found [here] (http://docs.openstack.org/developer/heat/getting_started/jeos_building.html).
 
