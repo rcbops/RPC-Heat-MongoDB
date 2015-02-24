@@ -1,8 +1,1 @@
-MongoDB is an Open Source document database, and the premier NoSQL
-database for Cloud applications. Proper cloud architectures that
-feature MongoDB's built in Auto-Sharding, Replication, and High Availability
-features can maximize resiliency and availability on a commodity gear
-powered Private Cloud.
- 
-MongoDB also bridges the gap between traditional database usage and
-Big Data by providing built in GridFS and Map/Reduce
+MongoDB is open source, document based, database, also classified as “NoSQL”. It utilizes JSON-like structure, making it easy to store entire documents rather than the rows and tables of data compared to relational database. MongoDB solution on Rackspace Private Cloud provides a great general-purpose platform for applications that require large and robust NoSQL database implementation.

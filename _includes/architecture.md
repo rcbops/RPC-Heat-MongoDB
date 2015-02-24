@@ -1,4 +1,1 @@
-This template deploys MongoDB as a sharded replica set for production
-databases. While the template starts at one shard consisting of a
-primary and two secondary members in the replica set, additional shards can be 
-added depending on your data needs.
+The RPC MongoDB solution provides a best practice architecture and solution for running mid-size to large MongoDB clusters configured to run on a typical Private Cloud configuration. Our MongoDB architecture is designed to provide a resilient database to store your content in a Private Cloud. We have optimized every component of the stack for cloud infrastructure. With a deployment driven by OpenStack Orchestration (heat) and Salt configuration management, we are able to deliver MongoDB cluster as a repeatable, scalable, production-ready deployment.

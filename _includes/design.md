@@ -1,12 +1,5 @@
-- In smaller configurations, Mongos can be on the same instances as
-your data. We chose to separate the routers from the data in order to
-isolate application and data networks by configuring Mongos instances to have 
-interfaces on both networks. Replica sets and Config Servers only
-have interfaces on the data network.
-- The cluster comes ready with one shard for databases to be deployed
-and have sharding enabled by simply enabling sharding on your database in
-the mongo shell.
-- Backups can be taken via mongodump. A great backup strategy is to
-attach a Cinder volume to the shard, dump the database to the Cinder volume, 
-and detach it. Then you can utilize volume snapshots to retain point in time 
-copies.
+- Uses MongoDB salt-formulas to configure the servers. Three instances will be Mongo configuration servers, at least two Mongo routing (mongos) servers, and at least three MongoDB shards in a replica set. Each replica set created becomes a shard for databases to spread across.
+
+- For access to nodes in the MongoDB cluster, either a floating IP address is assigned to the salt-master, or a new server is created in the same network as the MongoDB network. Additionally, mongos are also on a separate network so that applications can access your database cluster without being on the same network.
+
+- Changes to the MongoDB configuration can be done using Salt pillars on the Salt master. Adding additional mongos nodes can also be done using Salt.
