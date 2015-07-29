@@ -131,10 +131,15 @@ resources:
         - name: state_repos
       config: |
         #!/bin/bash
+        set -ex
+        logdir=/var/log/heat-deployments
+        prefix=${logdir}/config-salt-master
+        mkdir -p $logdir
+        exec &> >(tee -a ${prefix}.log)
+        [ -e ${prefix}.ran ] && exit 0
+        chmod -R 0600 ${logdir}
+        
         chmod 0700 /root/.ssh/coms_rsa
-        chmod 0600 /srv/pillar/mongodb.sls
-        chmod 0600 /srv/pillar/mongos.sls
-        chmod 0600 /srv/pillar/mongoconfigsrv.sls
 
         # Add coms from minions to master
         echo "$public_key" >> /root/.ssh/authorized_keys
@@ -160,6 +165,8 @@ resources:
         # Finally - Restart salt service
         service salt-master restart
 
+        touch ${prefix}.ran
+
   config-salt-minion:
     type: OS::Heat::SoftwareConfig
     properties:
@@ -169,6 +176,13 @@ resources:
         - name: master
       config: |
         #!/bin/bash
+        set -ex
+        logdir=/var/log/heat-deployments
+        prefix=${logdir}/config-salt-minion
+        mkdir -p $logdir
+        exec &> >(tee -a ${prefix}.log)
+        [ -e ${prefix}.ran ] && exit 0
+        chmod -R 0600 ${logdir}
         chmod 0700 /root/.ssh/coms_rsa
             
         # Add coms from minions to master
@@ -202,6 +216,7 @@ resources:
         rm /root/minion_key
         rm /root/.ssh/coms_rsa
         /sbin/ifconfig -a | grep -v eth0 | /usr/bin/awk '/eth.*Ethernet/ {print $1}' | while read E; do /usr/bin/sudo /sbin/dhclient $E; done
+        touch ${prefix}.ran
 
   deploy-salt-master:
     type: OS::Heat::SoftwareDeployment
@@ -412,11 +427,17 @@ resources:
       group: script
       config: |
         #!/bin/bash
+        set -ex
+        logdir=/var/log/heat-deployments
+        prefix=${logdir}/config-deploy
+        mkdir -p $logdir
+        chmod 0600 $logdir
         salt '*' saltutil.refresh_pillar
         salt '*' mine.update
         salt -G roles:mongodb.configserver state.highstate
         salt -G roles:mongodb.mongos state.highstate
         salt -G roles:mongodb.mongodb state.highstate
+        touch ${prefix}.ran
 
   deploy:
     type: OS::Heat::SoftwareDeployment
