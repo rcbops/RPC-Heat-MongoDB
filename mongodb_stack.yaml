@@ -27,6 +27,7 @@ parameters:
     type: string
     label: External Network UUID
     description: UUID of the external network. The private network created by this stack will route to this network. Any floating IP addresses needed by this stack will also route to this network.
+
   minion-count-mongos:
     type: number
     default: 2

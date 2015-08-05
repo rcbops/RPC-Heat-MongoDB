@@ -1,0 +1,21 @@
+name: MongoDB
+release: 1.0
+logo: assets/logo.png
+
+short_desc: |
+  RPC-Heat-MongoDB delivers a deployable configuration of MongoDB cluster using OpenStack Orchestration (heat) that is available in any Rackspace OpenStack Private Cloud.
+
+long_desc: |
+  MongoDB is open source, document based, database, also classified as “NoSQL”. It utilizes JSON-like structure, making it easy to store entire documents rather than the rows and tables of data compared to relational database. MongoDB solution on Rackspace Private Cloud provides a great general-purpose platform for applications that require large and robust NoSQL database implementation.
+
+architecture: |
+  The RPC MongoDB solution provides a best practice architecture and solution for running mid-size to large MongoDB clusters configured to run on a typical Private Cloud Configuration.
+  Our MongoDB architecture is designed to provide a resilient database to store your content in a Private Cloud. We have optimized every component of the stack for Cloud Infrastructure. With a deployment driven by OpenStack Orchestration (heat) and Salt configuration management, we are able to deliver MongoDB cluster as a repeatable, scalable, production-ready deployment.
+
+design_specs:
+  - Uses MongoDB salt-formulas to configure the servers. Three instances will be Mongo configuration servers, at least two Mongo routing (mongos) servers, and at least three mongodb shards in a replica set. Each replica set created becomes a shard for databases to spread across.
+  - For access to nodes in the MongoDB cluster, either a floating IP address is assigned to the salt-master, or a new server is created in the same network as the MongoDB network. Additionally, mongos are also on a separate network so that applications can access your database cluster without being on the same network.
+  - Changes to the MongoDB configuration can be done using Salt pillars on the Salt master. Adding additional mongos nodes can also be done using Salt.
+
+heat_template: mongodb_stack.yaml
+env_file: env.yaml

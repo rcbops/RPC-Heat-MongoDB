@@ -37,7 +37,7 @@ Requirements
 * A separete application network where mongos node will be connected.
 * The flavor should have at least 10GB of disk space.
 * Port 27017 should be accesible 
-* An Ubuntu image (12.04 or newer) preconfigured with heat-cfntools and heat confog-script. 
+* An Ubuntu image (12.04 or newer) preconfigured with heat-cfntools and heat config-script. 
 Instructions for creating a heat-cfntools enabled image for use with Heat can be 
 found [here] (http://docs.openstack.org/developer/heat/getting_started/jeos_building.html).
 
@@ -54,9 +54,10 @@ Here is an example of how to deploy this template using the
 [python-heatclient](https://github.com/openstack/python-heatclient):
 
 ```
-heat stack-create hadoop-stack -f mongodb_stack.yaml \
-  -e env.yaml -P flavor=m1.large;floating-network-id=<NET_ID>; \
-   < ... > ;image=<IMAGE_ID>
+heat stack-create mongo-iptables-test -f mongodb_stack.yaml -e env.yaml \
+  -P minion-size-mongodb=m1.small -P floating-network-id=<...> \
+  -P image=[image_name] -P keyname=[ssh_key] \
+  -P apps-network=<...>
 ```
 All the required parameters are as follows:
 ```
